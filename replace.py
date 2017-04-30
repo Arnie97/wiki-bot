@@ -9,7 +9,7 @@ import colorama
 class Bot:
 
     def __init__(self, site, **kwargs):
-        print('Logging into %s ...' % site)
+        print('Logging into %s...' % site, end=' ')
         self.site = mwclient.Site(site, **kwargs)
         self.site.login()
         print('Ready.')
@@ -20,9 +20,10 @@ class ReplaceBot(Bot):
     def __init__(self, site, **kwargs):
         super().__init__(site, **kwargs)
 
-    def __call__(self, pattern, replacement):
+    def __call__(self, pattern, replacement, edit_summary):
         self.pattern = pattern
         self.replacement = replacement
+        self.edit_summary = edit_summary
 
         for item in self.site.search(self.pattern):
             print(''.join((
@@ -38,19 +39,22 @@ class ReplaceBot(Bot):
                 .replace('<span class="searchmatch">', colorama.Fore.MAGENTA)
                 .replace('</span>', colorama.Fore.RESET)
             ))
-            self._choose_action(item)
+            self._choose_action(item['title'])
 
-    def _choose_action(self, item):
+    def _choose_action(self, title):
         prompt = ''.join((
             colorama.Fore.YELLOW,
             'Replace? [Y/n/q]: ',
             colorama.Fore.RESET
         ))
         while True:
-            choice = input(prompt).lower()
+            try:
+                choice = input(prompt).lower()
+            except (EOFError, KeyboardInterrupt):
+                choice = 'q'
 
             if choice in {'yes', 'y', ''}:
-                return self._replace(item)
+                return self._replace(title)
             elif choice in {'no', 'n'}:
                 return
             elif choice in {'quit', 'q'}:
@@ -62,10 +66,18 @@ class ReplaceBot(Bot):
                     colorama.Fore.RESET
                 )))
 
+    def _replace(self, title):
+        print('Saving...', end=' ')
+        page = self.site.pages[title]
+        original_text = page.text()
+        replaced_text = original_text.replace(self.pattern, self.replacement)
+        page.save(replaced_text, self.edit_summary)
+        print('Done.')
+
 
 def main(argv):
-    bot = ReplaceBot('test.wikipedia.org', clients_useragent='Arnie97-Bot')
-    bot('nice', None)
+    bot = ReplaceBot('zh.wikipedia.org', clients_useragent='Arnie97-Bot')
+    bot('任然', '仍然', '修正错别字')
 
 
 if __name__ == '__main__':
