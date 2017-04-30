@@ -26,21 +26,27 @@ class ReplaceBot(Bot):
         self.edit_summary = edit_summary
         self.minor_edit = minor_edit
 
+        self.ignored = 0
+        self.edited = 0
+
         for item in self.site.search(self.pattern):
-            print(''.join((
+            print(
                 '\n',
                 colorama.Fore.CYAN,
                 item['title'],
                 colorama.Fore.GREEN,
                 ' (', str(item['size']), ')',
-                colorama.Fore.RESET
-            )))
+                colorama.Fore.RESET,
+                sep=''
+            )
             print(html.unescape(
                 item['snippet']
                 .replace('<span class="searchmatch">', colorama.Fore.MAGENTA)
                 .replace('</span>', colorama.Fore.RESET)
             ))
             self._choose_action(item['title'])
+
+        self._show_stat()
 
     def _choose_action(self, title):
         prompt = ''.join((
@@ -55,10 +61,14 @@ class ReplaceBot(Bot):
                 choice = 'q'
 
             if choice in {'yes', 'y', ''}:
+                self.edited += 1
                 return self._replace(title)
             elif choice in {'no', 'n'}:
+                self.ignored += 1
                 return
             elif choice in {'quit', 'q'}:
+                self.ignored += 1
+                self._show_stat()
                 sys.exit()
             else:
                 print(''.join((
@@ -74,6 +84,16 @@ class ReplaceBot(Bot):
         replaced_text = original_text.replace(self.pattern, self.replacement)
         page.save(replaced_text, self.edit_summary, self.minor_edit)
         print('Done.')
+
+    def _show_stat(self):
+        print(
+            '\n',
+            colorama.Fore.RED,
+            '%d total, %d edited, %d ignored' %
+                (self.edited + self.ignored, self.edited, self.ignored),
+            colorama.Fore.RESET,
+            sep=''
+        )
 
 
 def main(argv):
