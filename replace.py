@@ -20,10 +20,11 @@ class ReplaceBot(Bot):
     def __init__(self, site, **kwargs):
         super().__init__(site, **kwargs)
 
-    def __call__(self, pattern, replacement, edit_summary):
+    def __call__(self, pattern, replacement, edit_summary, minor_edit=True):
         self.pattern = pattern
         self.replacement = replacement
         self.edit_summary = edit_summary
+        self.minor_edit = minor_edit
 
         for item in self.site.search(self.pattern):
             print(''.join((
@@ -71,7 +72,7 @@ class ReplaceBot(Bot):
         page = self.site.pages[title]
         original_text = page.text()
         replaced_text = original_text.replace(self.pattern, self.replacement)
-        page.save(replaced_text, self.edit_summary)
+        page.save(replaced_text, self.edit_summary, self.minor_edit)
         print('Done.')
 
 
