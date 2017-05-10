@@ -14,7 +14,7 @@ class RailwayBot(replace.ReplaceBot):
         self.template = 'Template:Infobox China railway station'
         self.keywords = ['电报码', '拼音码']
         self.name_pattern = '(\w+)站'
-        self.field_pattern = r'(\|\s*(%s)\s*=[^|]*)(?=\|)' % \
+        self.field_pattern = r'(\|\s*(%s)\s*=[^<{[\]}>|]*)(?=\|)' % \
             '(车站|其他|英文)(名称(拼音)?|拼音|代码)'
         self.repl_pattern = '|电报码 = {1}\n|拼音码 = {0}\n'
 
