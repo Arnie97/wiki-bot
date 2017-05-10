@@ -8,6 +8,7 @@ import replace
 class RailwayBot(replace.ReplaceBot):
 
     def __init__(self, site, **kwargs):
+        'Load the telegraph code database.'
         super().__init__(site, **kwargs)
 
         self.template = 'Template:Infobox China railway station'
@@ -26,6 +27,7 @@ class RailwayBot(replace.ReplaceBot):
             self.stations[lst[1]] = [lst[0].upper(), lst[2]]
 
     def __call__(self, edit_summary, minor_edit=True):
+        'Iterate through instances of the railway station template.'
         self.edit_summary = edit_summary
         self.minor_edit = minor_edit
 
@@ -38,14 +40,22 @@ class RailwayBot(replace.ReplaceBot):
 
         self._show_stat()
 
+    def _convert(self, **kwargs):
+        'Convert between language variants, such as zh-CN and zh-TW.'
+        return self.site.get('parse', **kwargs)['parse']['displaytitle']
+
+    def _normalize(self, pageid):
+        'Get normalized station name from page id.'
+        simplified = self._convert(pageid=pageid, uselang='zh-CN')
+        match = re.match(self.name_pattern, simplified)
+        return match.group(1) if match else ''
+
     def _evaluate(self, page):
+        normalized = self._normalize(page.pageid)
+
         # exclude pages with telecode
         content = page.text()
         included = all(keyword in content for keyword in self.keywords)
-
-        # get normalized station name from page title
-        match = re.match(self.name_pattern, page.name)
-        normalized = match.group(1) if match else ''
 
         choose_action = False
         if included:
@@ -69,6 +79,7 @@ class RailwayBot(replace.ReplaceBot):
         )
         if choose_action:
             self._choose_action(page.name)
+
 
 if __name__ == '__main__':
     bot = RailwayBot('zh.wikipedia.org', clients_useragent='Arnie97-Bot')
