@@ -14,6 +14,9 @@ class RailwayBot(replace.ReplaceBot):
         self.template = 'Template:Infobox China railway station'
         self.keywords = ['电报码', '拼音码']
         self.name_pattern = '(\w+)站'
+        self.field_pattern = r'(\|\s*(%s)\s*=[^|]*)(?=\|)' % \
+            '(车站|其他|英文)(名称(拼音)?|拼音|代码)'
+        self.repl_pattern = '|电报码 = {1}\n|拼音码 = {0}\n'
 
         # https://kyfw.12306.cn/otn/resources/js/framework/station_name.js
         with open('station_name.js', encoding='utf-8') as fp:
@@ -78,7 +81,22 @@ class RailwayBot(replace.ReplaceBot):
             sep=''
         )
         if choose_action:
-            self._choose_action(page.name)
+            self._choose_action(page, self.stations[normalized])
+
+    def _replace(self, page, data):
+        print('Saving...', end=' ')
+        s = page.text()
+
+        # get the last occurrence
+        for match in re.finditer(self.field_pattern, s):
+            pass
+
+        # insert telegraph code after the match
+        i = match.end()
+        result = ''.join((s[:i], self.repl_pattern.format(*data), s[i:]))
+
+        page.save(result, self.edit_summary, self.minor_edit)
+        print('Done.')
 
 
 if __name__ == '__main__':

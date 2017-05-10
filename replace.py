@@ -48,7 +48,7 @@ class ReplaceBot(Bot):
 
         self._show_stat()
 
-    def _choose_action(self, title):
+    def _choose_action(self, *args, **kwargs):
         prompt = ''.join((
             colorama.Fore.YELLOW,
             'Replace? [Y/n/q]: ',
@@ -62,7 +62,7 @@ class ReplaceBot(Bot):
 
             if choice in {'yes', 'y', ''}:
                 self.edited += 1
-                return self._replace(title)
+                return self._replace(*args, **kwargs)
             elif choice in {'no', 'n'}:
                 self.ignored += 1
                 return
