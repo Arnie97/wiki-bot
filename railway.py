@@ -97,21 +97,13 @@ class RailwayBot(replace.ReplaceBot):
             sep=''
         )
 
-        if not action:
-            return
-        elif included:
-            # page preview
-            for line in contents.split('\n'):
-                if any(keyword in line for keyword in self.keywords):
-                    print(line)
-            self._choose_action(page, self.stations[normalized], True)
-        else:
-            self._replace(page, self.stations[normalized])
-            self.edited += 1
+        if action:
+            self._confirm(page, self.stations[normalized], included)
 
-    def _replace(self, page, data, existing=False):
-        print('Saving...', end=' ')
+    def _confirm(self, page, data, existing=False):
+        'Do regular expression substitute and preview the changes.'
         s = page.text()
+        self._preview(s, '-', colorama.Fore.RED)
 
         # remove existing parameters
         if existing:
@@ -125,7 +117,21 @@ class RailwayBot(replace.ReplaceBot):
         # insert telegraph code after the match
         i = match.end()
         result = ''.join((s[:i], self.repl.format(*data), s[i:]))
+        self._preview(result, '+', colorama.Fore.GREEN)
 
+        self._choose_action(page, result)
+
+    def _preview(self, contents, prefix='', color=colorama.Fore.RESET):
+        'Generate a summary of changes in "diff" style.'
+        print(color, end='')
+        for line in contents.split('\n'):
+            if any(keyword in line for keyword in self.keywords):
+                print(prefix, line)
+        print(colorama.Fore.RESET, end='')
+
+    def _replace(self, page, result):
+        'Commit changes to Wikipedia.'
+        print('Saving...', end=' ')
         page.save(result, self.edit_summary, self.minor_edit)
         print('Done.')
 
