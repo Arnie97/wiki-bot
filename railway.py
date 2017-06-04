@@ -100,14 +100,23 @@ class RailwayBot(replace.ReplaceBot):
         if not action:
             return
         elif included:
-            self._choose_action(page, self.stations[normalized])
+            # page preview
+            for line in contents.split('\n'):
+                if any(keyword in line for keyword in self.keywords):
+                    print(line)
+            self._choose_action(page, self.stations[normalized], True)
         else:
             self._replace(page, self.stations[normalized])
             self.edited += 1
 
-    def _replace(self, page, data):
+    def _replace(self, page, data, existing=False):
         print('Saving...', end=' ')
         s = page.text()
+
+        # remove existing parameters
+        if existing:
+            fields = '|'.join(self.keywords)
+            s = re.sub(self.field_pattern % fields, '', s)
 
         # get the last occurrence
         for match in re.finditer(self.field_pattern % self.fields, s):
