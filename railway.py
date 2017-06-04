@@ -7,17 +7,19 @@ import replace
 
 class RailwayBot(replace.ReplaceBot):
 
+    template = 'Template:Infobox China railway station'
+    keywords = ['电报码', '拼音码']
+    repl = '|电报码 = {1}\n|拼音码 = {0}\n'
+    fields = '(车站|其他|英文)(名称(拼音)?|拼音|代码)'
+
+    name_pattern = r'(\w+)站'
+    param_pattern = r'\|\s*(%s)\s*=\s*{}(?=\|)'
+    valid_pattern = param_pattern.format(r'[A-Z]{3}\s*')
+    field_pattern = param_pattern.format(r'[^<{[\]}>|]*')
+
     def __init__(self, site, **kwargs):
         'Load the telegraph code database.'
         super().__init__(site, **kwargs)
-
-        self.template = 'Template:Infobox China railway station'
-        self.keywords = ['电报码', '拼音码']
-        self.keyword_pattern = r'\|\s*%s\s*=\s*[A-Z]{3}\W'
-        self.name_pattern = '(\w+)站'
-        self.field_pattern = r'(\|\s*(%s)\s*=[^<{[\]}>|]*)(?=\|)' % \
-            '(车站|其他|英文)(名称(拼音)?|拼音|代码)'
-        self.repl_pattern = '|电报码 = {1}\n|拼音码 = {0}\n'
 
         # https://kyfw.12306.cn/otn/resources/js/framework/station_name.js
         with open('station_name.js', encoding='utf-8') as fp:
@@ -65,7 +67,7 @@ class RailwayBot(replace.ReplaceBot):
             keyword in contents
             for keyword in self.keywords)
         complete = all(
-            re.search(self.keyword_pattern % keyword, contents)
+            re.search(self.valid_pattern % keyword, contents)
             for keyword in self.keywords)
 
         # does not perform any action by default
@@ -108,12 +110,12 @@ class RailwayBot(replace.ReplaceBot):
         s = page.text()
 
         # get the last occurrence
-        for match in re.finditer(self.field_pattern, s):
+        for match in re.finditer(self.field_pattern % self.fields, s):
             pass
 
         # insert telegraph code after the match
         i = match.end()
-        result = ''.join((s[:i], self.repl_pattern.format(*data), s[i:]))
+        result = ''.join((s[:i], self.repl.format(*data), s[i:]))
 
         page.save(result, self.edit_summary, self.minor_edit)
         print('Done.')
