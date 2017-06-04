@@ -13,6 +13,7 @@ class RailwayBot(replace.ReplaceBot):
 
         self.template = 'Template:Infobox China railway station'
         self.keywords = ['电报码', '拼音码']
+        self.keyword_pattern = r'\|\s*%s\s*=\s*[A-Z]{3}\W'
         self.name_pattern = '(\w+)站'
         self.field_pattern = r'(\|\s*(%s)\s*=[^<{[\]}>|]*)(?=\|)' % \
             '(车站|其他|英文)(名称(拼音)?|拼音|代码)'
@@ -34,8 +35,9 @@ class RailwayBot(replace.ReplaceBot):
         self.edit_summary = edit_summary
         self.minor_edit = minor_edit
 
-        self.unknown = 0
         self.ignored = 0
+        self.error = 0
+        self.unknown = 0
         self.edited = 0
 
         for page in self.site.pages[self.template].embeddedin():
@@ -54,22 +56,34 @@ class RailwayBot(replace.ReplaceBot):
         return match.group(1) if match else ''
 
     def _evaluate(self, page):
+        'Analyze the page contents to decide the next step.'
         normalized = self._normalize(page.pageid)
 
-        # exclude pages with telecode
-        content = page.text()
-        included = all(keyword in content for keyword in self.keywords)
+        # exclude pages with telecode, but not pages with empty parameters
+        contents = page.text()
+        included = any(
+            keyword in contents
+            for keyword in self.keywords)
+        complete = all(
+            re.search(self.keyword_pattern % keyword, contents)
+            for keyword in self.keywords)
 
-        choose_action = False
-        if included:
+        # does not perform any action by default
+        action = False
+
+        if complete:
             prompt = 'OK'
             self.ignored += 1
-        elif not normalized or normalized not in self.stations:
+        elif not normalized:
+            prompt = colorama.Fore.RED + 'X'
+            self.error += 1
+        elif normalized not in self.stations:
             prompt = colorama.Fore.MAGENTA + normalized + '?'
             self.unknown += 1
         else:
             prompt = colorama.Fore.YELLOW + self.stations[normalized][1]
-            choose_action = True
+            action = True
+
         print(
             colorama.Fore.CYAN,
             page.name,
@@ -80,8 +94,14 @@ class RailwayBot(replace.ReplaceBot):
             colorama.Fore.RESET,
             sep=''
         )
-        if choose_action:
+
+        if not action:
+            return
+        elif included:
             self._choose_action(page, self.stations[normalized])
+        else:
+            self._replace(page, self.stations[normalized])
+            self.edited += 1
 
     def _replace(self, page, data):
         print('Saving...', end=' ')
