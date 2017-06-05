@@ -6,6 +6,7 @@ import replace
 
 
 class RailwayBot(replace.ReplaceBot):
+    'Add telegraph code to China railway station articles.'
 
     template = 'Template:Infobox China railway station'
     keywords = ['电报码', '拼音码']
@@ -14,7 +15,7 @@ class RailwayBot(replace.ReplaceBot):
 
     name_pattern = r'(\w+)站'
     param_pattern = r'\|\s*(%s)\s*=\s*{}(?=\|)'
-    valid_pattern = param_pattern.format(r'[A-Z]{3}\s*')
+    valid_pattern = param_pattern.format(r'[A-Z]{3}[\s\S]*')
     field_pattern = param_pattern.format(r'[^<{[\]}>|]*')
 
     def __init__(self, site, **kwargs):
