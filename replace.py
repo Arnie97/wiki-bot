@@ -9,6 +9,7 @@ import colorama
 class Bot:
 
     def __init__(self, site, **kwargs):
+        colorama.init()
         print('Logging into %s...' % site, end=' ')
         self.site = mwclient.Site(site, **kwargs)
         self.site.login()
