@@ -18,9 +18,9 @@ class RailwayBot(replace.ReplaceBot):
     valid_pattern = param_pattern.format(r'[A-Z]{3}[\s\S]*')
     field_pattern = param_pattern.format(r'[^<{[\]}>|]*')
 
-    def __init__(self, site, **kwargs):
+    def __init__(self, **kwargs):
         'Load the telegraph code database.'
-        super().__init__(site, **kwargs)
+        super().__init__(**kwargs)
 
         # https://kyfw.12306.cn/otn/resources/js/framework/station_name.js
         with open('station_name.js', encoding='utf-8') as fp:
@@ -138,5 +138,5 @@ class RailwayBot(replace.ReplaceBot):
 
 
 if __name__ == '__main__':
-    bot = RailwayBot('zh.wikipedia.org', clients_useragent='Arnie97-Bot')
-    bot('信息框：添加电报码', minor_edit=False)
+    bot = RailwayBot()
+    bot('添加电报码、拼音码')

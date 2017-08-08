@@ -8,20 +8,26 @@ import colorama
 
 class Bot:
 
-    def __init__(self, site, **kwargs):
+    def __init__(
+            self,
+            host='zh.wikipedia.org',
+            clients_useragent='Arnie97-Bot',
+            **kwargs):
+
         colorama.init()
-        print('Logging into %s...' % site, end=' ')
-        self.site = mwclient.Site(site, **kwargs)
+        print('Logging into %s...' % host, end=' ')
+        self.site = mwclient.Site(
+            host=host,
+            clients_useragent=clients_useragent,
+            **kwargs)
+
         self.site.login()
         print('Ready.')
 
 
 class ReplaceBot(Bot):
 
-    def __init__(self, site, **kwargs):
-        super().__init__(site, **kwargs)
-
-    def __call__(self, pattern, replacement, edit_summary, minor_edit=True):
+    def __call__(self, pattern, replacement, edit_summary, minor_edit=False):
         self.pattern = pattern
         self.replacement = replacement
         self.edit_summary = edit_summary
@@ -98,8 +104,12 @@ class ReplaceBot(Bot):
 
 
 def main(argv):
-    bot = ReplaceBot('zh.wikipedia.org', clients_useragent='Arnie97-Bot')
-    bot('任然', '仍然', '修正错别字')
+    try:
+        assert 4 <= len(argv) <= 5
+        bot = ReplaceBot()
+        bot(*argv[1:])
+    except AssertionError:
+        print('Usage: %s <pattern> <repl> <edit-summary> [minor]' % argv[0])
 
 
 if __name__ == '__main__':
