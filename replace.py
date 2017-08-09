@@ -1,116 +1,47 @@
 #!/usr/bin/env python3
 
-import sys
+'''Simple find-and-replace bot.
+
+Usage: {0} <pattern> <repl> <edit-summary> [minor]
+Example: {0} infomation information "Fix typo" m
+'''
+
 import html
-import mwclient
 import colorama
-
-
-class Bot:
-
-    def __init__(
-            self,
-            host='zh.wikipedia.org',
-            clients_useragent='Arnie97-Bot',
-            **kwargs):
-
-        colorama.init()
-        print('Logging into %s...' % host, end=' ')
-        self.site = mwclient.Site(
-            host=host,
-            clients_useragent=clients_useragent,
-            **kwargs)
-
-        self.site.login()
-        print('Ready.')
+from bot import Bot, main
 
 
 class ReplaceBot(Bot):
 
-    def __call__(self, pattern, replacement, edit_summary, minor_edit=False):
-        self.pattern = pattern
-        self.replacement = replacement
-        self.edit_summary = edit_summary
-        self.minor_edit = minor_edit
+    def __call__(self, pattern, repl, edit_summary, minor=False):
+        'Search the MediaWiki site.'
+        super().__call__(edit_summary, minor)
+        self.keywords = [pattern, repl]
 
-        self.ignored = 0
-        self.edited = 0
-
-        for item in self.site.search(self.pattern):
-            print(
-                '\n',
-                colorama.Fore.CYAN,
-                item['title'],
-                colorama.Fore.GREEN,
-                ' (', str(item['size']), ')',
-                colorama.Fore.RESET,
-                sep=''
-            )
-            print(html.unescape(
-                item['snippet']
-                .replace('<span class="searchmatch">', colorama.Fore.MAGENTA)
-                .replace('</span>', colorama.Fore.RESET)
-            ))
-            self._choose_action(item['title'])
+        for item in self.site.search(pattern):
+            self._evaluate(item)
 
         self._show_stat()
 
-    def _choose_action(self, *args, **kwargs):
-        prompt = ''.join((
-            colorama.Fore.YELLOW,
-            'Replace? [Y/n/q]: ',
-            colorama.Fore.RESET
+    def _evaluate(self, item):
+        'Highlight keywords in the article.'
+        page = self.site.pages[item['title']]
+        self._info(page)
+        print(html.unescape(
+            item['snippet']
+            .replace('<span class="searchmatch">', colorama.Fore.MAGENTA)
+            .replace('</span>', colorama.Fore.RESET)
         ))
-        while True:
-            try:
-                choice = input(prompt).lower()
-            except (EOFError, KeyboardInterrupt):
-                choice = 'q'
+        self._replace(page)
 
-            if choice in {'yes', 'y', ''}:
-                self.edited += 1
-                return self._replace(*args, **kwargs)
-            elif choice in {'no', 'n'}:
-                self.ignored += 1
-                return
-            elif choice in {'quit', 'q'}:
-                self.ignored += 1
-                self._show_stat()
-                sys.exit()
-            else:
-                print(''.join((
-                    colorama.Fore.YELLOW,
-                    'Invalid operation:',
-                    colorama.Fore.RESET
-                )))
-
-    def _replace(self, title):
-        print('Saving...', end=' ')
-        page = self.site.pages[title]
+    def _replace(self, page):
+        'Performs the replacement and preview the changes.'
         original_text = page.text()
-        replaced_text = original_text.replace(self.pattern, self.replacement)
-        page.save(replaced_text, self.edit_summary, self.minor_edit)
-        print('Done.')
-
-    def _show_stat(self):
-        print(
-            '\n',
-            colorama.Fore.RED,
-            '%d total, %d edited, %d ignored' %
-                (self.edited + self.ignored, self.edited, self.ignored),
-            colorama.Fore.RESET,
-            sep=''
-        )
-
-
-def main(argv):
-    try:
-        assert 4 <= len(argv) <= 5
-        bot = ReplaceBot()
-        bot(*argv[1:])
-    except AssertionError:
-        print('Usage: %s <pattern> <repl> <edit-summary> [minor]' % argv[0])
+        replaced_text = original_text.replace(*self.keywords)
+        self._preview(original_text, '-', colorama.Fore.RED)
+        self._preview(replaced_text, '+', colorama.Fore.GREEN)
+        self._confirm(page, replaced_text)
 
 
 if __name__ == '__main__':
-    main(sys.argv)
+    main(ReplaceBot, argc=4)

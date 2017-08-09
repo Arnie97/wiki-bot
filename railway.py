@@ -1,12 +1,17 @@
 #!/usr/bin/env python3
 
+'''Add telegraph code to China railway station articles.
+
+Usage: {0} <edit-summary> [minor]
+Example: {0} "Add telegraph code" m
+'''
+
 import re
 import colorama
-import replace
+from bot import Bot, main
 
 
-class RailwayBot(replace.ReplaceBot):
-    'Add telegraph code to China railway station articles.'
+class RailwayBot(Bot):
 
     template = 'Template:Infobox China railway station'
     keywords = ['电报码', '拼音码']
@@ -18,9 +23,9 @@ class RailwayBot(replace.ReplaceBot):
     valid_pattern = param_pattern.format(r'[A-Z]{3}[\s\S]*')
     field_pattern = param_pattern.format(r'[^<{[\]}>|]*')
 
-    def __init__(self, **kwargs):
+    def __init__(self, *args, **kwargs):
         'Load the telegraph code database.'
-        super().__init__(**kwargs)
+        super().__init__(*args, **kwargs)
 
         # https://kyfw.12306.cn/otn/resources/js/framework/station_name.js
         with open('station_name.js', encoding='utf-8') as fp:
@@ -33,24 +38,16 @@ class RailwayBot(replace.ReplaceBot):
             lst = s.split('|')
             self.stations[lst[1]] = [lst[0].upper(), lst[2]]
 
-    def __call__(self, edit_summary, minor_edit=True):
+    def __call__(self, edit_summary, minor=False):
         'Iterate through instances of the railway station template.'
-        self.edit_summary = edit_summary
-        self.minor_edit = minor_edit
-
-        self.ignored = 0
+        super().__call__(edit_summary, minor)
         self.error = 0
         self.unknown = 0
-        self.edited = 0
 
         for page in self.site.pages[self.template].embeddedin():
             self._evaluate(page)
 
         self._show_stat()
-
-    def _convert(self, **kwargs):
-        'Convert between language variants, such as zh-CN and zh-TW.'
-        return self.site.get('parse', **kwargs)['parse']['displaytitle']
 
     def _normalize(self, pageid):
         'Get normalized station name from page id.'
@@ -87,22 +84,14 @@ class RailwayBot(replace.ReplaceBot):
             prompt = colorama.Fore.YELLOW + self.stations[normalized][1]
             action = True
 
-        print(
-            colorama.Fore.CYAN,
-            page.name,
-            colorama.Fore.GREEN,
-            ' (', str(page.length), ')',
-            colorama.Fore.RESET,
-            ' -> ', prompt,
-            colorama.Fore.RESET,
-            sep=''
-        )
+        self._info(page, ' -> ', prompt, end='')
 
         if action:
-            self._confirm(page, self.stations[normalized], included)
+            self._replace(page, self.stations[normalized], included)
 
-    def _confirm(self, page, data, existing=False):
+    def _replace(self, page, data, existing=False):
         'Do regular expression substitute and preview the changes.'
+        print()  # line break
         s = page.text()
         self._preview(s, '-', colorama.Fore.RED)
 
@@ -120,23 +109,8 @@ class RailwayBot(replace.ReplaceBot):
         result = ''.join((s[:i], self.repl.format(*data), s[i:]))
         self._preview(result, '+', colorama.Fore.GREEN)
 
-        self._choose_action(page, result)
-
-    def _preview(self, contents, prefix='', color=colorama.Fore.RESET):
-        'Generate a summary of changes in "diff" style.'
-        print(color, end='')
-        for line in contents.split('\n'):
-            if any(keyword in line for keyword in self.keywords):
-                print(prefix, line)
-        print(colorama.Fore.RESET, end='')
-
-    def _replace(self, page, result):
-        'Commit changes to Wikipedia.'
-        print('Saving...', end=' ')
-        page.save(result, self.edit_summary, self.minor_edit)
-        print('Done.')
+        self._confirm(page, result)
 
 
 if __name__ == '__main__':
-    bot = RailwayBot()
-    bot('添加电报码、拼音码')
+    main(RailwayBot)
