@@ -47,6 +47,19 @@ class Bot:
         'Convert between language variants, such as zh-CN and zh-TW.'
         return self.site.get('parse', **kwargs)['parse']['displaytitle']
 
+    def _variants(self, page):
+        'List all redirect equivalents for the page.'
+        # track the redirect chain to its origin
+        while page:
+            origin = page
+            page = page.redirects_to()
+
+        # get all incoming redirects
+        redirects = origin.backlinks(filterredir='redirects')
+        variants = [p.page_title for p in redirects]
+        variants.append(origin.page_title)
+        return variants
+
     def _preview(self, contents, prefix='', color=colorama.Fore.RESET):
         'Generate a summary of changes in "diff" style.'
         print(color, end='')

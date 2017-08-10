@@ -18,9 +18,7 @@ class BannerBot(Bot):
         # get all possible variants of the WikiProject banner
         ns = 'Template:'
         banner_page = self.site.pages[ns + banner]
-        redirects = banner_page.backlinks(filterredir='redirects')
-        self.variants = [p.page_title for p in redirects]
-        self.variants.append(banner_page.page_title)
+        self.variants = self._variants(banner_page)
 
         # check all pages embedding the specified templates
         for tl in templates.split(','):
