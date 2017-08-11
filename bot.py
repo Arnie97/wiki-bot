@@ -7,6 +7,8 @@ Example: {0} "Nothing of value" m
 '''
 
 import sys
+import time
+import functools
 import mwclient
 import colorama
 
@@ -28,6 +30,7 @@ class Bot:
 
         self.ignored = 0
         self.edited = 0
+        self.errors = 0
 
     def __next__(self):
         'Simple progress indicator.'
@@ -97,13 +100,35 @@ class Bot:
                     colorama.Fore.RESET,
                     choice)
 
+    @staticmethod
+    def _retry(func, max_retries=5, interval=60, min_interval=10):
+        'Retry operation in case of failure.'
+
+        @functools.wraps(func)
+        def wrapper(self, *args, **kwargs):
+            for count in range(max_retries):
+                try:
+                    func(self, *args, **kwargs)
+                except mwclient.MwClientError as err:
+                    print('{0.__class__.__name__}: {0}'.format(err))
+                    if count == max_retries - 1:
+                        self.errors += 1
+                        return
+                    else:  # incremental backoff strategy
+                        time.sleep(max(count * interval, min_interval))
+                else:
+                    self.edited += 1
+                    return
+
+        return wrapper
+
+    @_retry.__func__
     def _save(self, page, result, verbose=False):
         'Commit changes to MediaWiki.'
         if verbose is True:
             print('Saving...', end=' ')
 
         page.save(result, self.edit_summary, self.minor)
-        self.edited += 1
 
         if verbose is True:
             print('Done.')
@@ -112,11 +137,13 @@ class Bot:
 
     def _show_stat(self):
         'Show the number of edited and ignored pages.'
+        items = ['total', 'edited', 'ignored', 'errors']
+        self.total = sum(getattr(self, i) for i in items[1:])
+        pattern = ', '.join('{{0.{0}}} {0}'.format(i) for i in items)
         print(
             '\n',
             colorama.Fore.RED,
-            '%d total, %d edited, %d ignored' %
-                (self.edited + self.ignored, self.edited, self.ignored),
+            pattern.format(self),
             colorama.Fore.RESET,
             sep='')
 

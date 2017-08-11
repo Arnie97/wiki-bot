@@ -41,7 +41,6 @@ class RailwayBot(Bot):
     def __call__(self, edit_summary, minor=False):
         'Iterate through instances of the railway station template.'
         super().__call__(edit_summary, minor)
-        self.error = 0
         self.unknown = 0
 
         for page in self.site.pages[self.template].embeddedin():
@@ -76,7 +75,7 @@ class RailwayBot(Bot):
             self.ignored += 1
         elif not normalized:
             prompt = colorama.Fore.RED + 'X'
-            self.error += 1
+            self.errors += 1
         elif normalized not in self.stations:
             prompt = colorama.Fore.MAGENTA + normalized + '?'
             self.unknown += 1
