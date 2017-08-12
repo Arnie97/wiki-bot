@@ -43,7 +43,7 @@ class BannerBot(Bot):
             result = '{{%s}}\n%s' % (self.variants[-1], contents)
 
         if self.minor:  # automatic mode
-            self._save(page, result, verbose='#')
+            self._save(page, result, '*' if page.exists else '#')
         else:  # manual mode
             self._info(page)
             self._confirm(page, result)
