@@ -18,7 +18,7 @@ class ReplaceBot(Bot):
         super().__call__(edit_summary, minor)
         self.keywords = [pattern, repl]
 
-        for item in self.site.search(pattern):
+        for item in self.site.search('"%s"' % pattern):
             self._evaluate(item)
 
         self._show_stat()
@@ -38,8 +38,9 @@ class ReplaceBot(Bot):
         'Performs the replacement and preview the changes.'
         original_text = page.text()
         replaced_text = original_text.replace(*self.keywords)
-        self._preview(original_text, '-', colorama.Fore.RED)
-        self._preview(replaced_text, '+', colorama.Fore.GREEN)
+        if not self.minor:
+            self._preview(original_text, '-', colorama.Fore.RED)
+            self._preview(replaced_text, '+', colorama.Fore.GREEN)
         self._confirm(page, replaced_text)
 
 
