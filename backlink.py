@@ -31,7 +31,7 @@ class BacklinkBot(Bot):
         self._replace(r'({rsrc})', r'{dest}|\1')
         self._replace(r'{rsrc}\|({rdest})', r'\1')
         self._replace(r'{rsrc}\|([^\]|]+)', r'{dest}|\1')
-        self._save(page, self._contents)
+        self._save(page, self._contents, verbose=True)
 
     def _replace(self, pattern, replace):
         'Do regular expression substitute.'

@@ -73,11 +73,7 @@ class Bot:
 
     def _confirm(self, *args, **kwargs):
         'Confirm the changes.'
-        prompt = ''.join((
-            colorama.Fore.YELLOW,
-            'Replace? [Y/n/q]: ',
-            colorama.Fore.RESET))
-
+        prompt = '{0.YELLOW}Replace? [Y/n/q]: {0.RESET}'.format(colorama.Fore)
         while True:
             try:
                 choice = input(prompt).lower()
@@ -94,11 +90,12 @@ class Bot:
                 self._show_stat()
                 sys.exit()
             else:
-                print(
-                    colorama.Fore.RED,
-                    'Invalid operation: ',
-                    colorama.Fore.RESET,
-                    choice)
+                self._invalid(choice)
+
+    def _invalid(self, command):
+        'Print warning message for invalid operations.'
+        message = '{0.RED}Invalid operation: {0.RESET}{1}'
+        print(message.format(colorama.Fore, command))
 
     @staticmethod
     def _retry(func, max_retries=5, interval=60, min_interval=10):

@@ -40,14 +40,14 @@ class Disambiguator(BacklinkBot):
         for i, link in enumerate(self.links):
             self._option(i, link)
         self._option('r', 'Remove this link')
-        self._option('e', 'Edit options')
+        self._option('e', 'Edit link options')
         self._option('q', 'Quit')
 
         while True:
             try:
                 choice = input('--> ').lower()
                 n = int(choice)
-                assert n
+                assert n != 0
                 link = self.links[n]
             except (EOFError, KeyboardInterrupt):
                 choice = 'q'
@@ -66,10 +66,57 @@ class Disambiguator(BacklinkBot):
             elif choice == 'r':
                 raise NotImplementedError
             elif choice == 'e':
-                raise NotImplementedError
+                self._select_edit_mode()
+                return self._select(page)
             else:
-                message = '{0.RED}Invalid operation: {0.RESET}{1}'
-                print(message.format(colorama.Fore, choice))
+                self._invalid(choice)
+
+    def _select_edit_mode(self):
+        'Show the editing submenu.'
+        self._option('i', 'Insert')
+        self._option('a', 'Append')
+        self._option('d', 'Delete')
+        self._option('s', 'Substitute')
+        self._option('q', 'Back')
+
+        while True:
+            choice = input('e > ').lower()
+            if choice == 'q':
+                return
+            elif choice in 'iads':
+                self._edit_links(choice)
+                return self._select_edit_mode()
+            else:
+                self._invalid(choice)
+
+    def _edit_links(self, mode):
+        'Edit links in the list.'
+        for i, link in enumerate(self.links):
+            self._option(i, link)
+        self._option('q', 'Back')
+
+        while True:
+            choice = input(mode + ' > ').lower()
+            if choice == 'q':
+                return
+            try:
+                n = int(choice)
+                assert mode != 'd' or n != 0
+                link = self.links[n]
+            except (ValueError, IndexError, AssertionError):
+                self._invalid(choice)
+                continue
+
+            if mode == 'd':
+                self.links.pop(n)
+            else:
+                s = input(mode + choice + ' > ')
+                if mode == 's':
+                    self.links[n] = s
+                else:
+                    n += 1 if mode == 'a' else 0
+                    self.links.insert(n, s)
+            return self._edit_links(mode)
 
     @staticmethod
     def _option(key, option):
