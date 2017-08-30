@@ -18,19 +18,13 @@ class Disambiguator(BacklinkBot):
     first_link_in_line = r'(?m)^[^\[]*?\[\[%s\]\]' % pipe_link
 
     def __call__(self, title, edit_summary, minor=False):
-
+        'Iterate through backlinks.'
         super(BacklinkBot, self).__call__(edit_summary, minor)
-        disambig = self.site.pages[title]
-        contents = disambig.text()
-        self.links = re.findall(self.first_link_in_line, contents)
-        self.links.insert(0, title + '?')
         self.title = title
+        disambig = self._reset_links()
 
         for page in disambig.backlinks():
-            if page.namespace == 0:  # articles
-                self._select(page)
-            else:
-                self.ignored += 1
+            self._select(page)
 
         self._show_stat()
 
@@ -39,7 +33,7 @@ class Disambiguator(BacklinkBot):
         self._info(page, end='\n\n')
         for i, link in enumerate(self.links):
             self._option(i, link)
-        self._option('r', 'Remove this link')
+        self._option('-', 'Remove this link')
         self._option('e', 'Edit link options')
         self._option('q', 'Quit')
 
@@ -63,7 +57,7 @@ class Disambiguator(BacklinkBot):
                 self.ignored += 1
                 self._show_stat()
                 sys.exit()
-            elif choice == 'r':
+            elif choice == '-':
                 raise NotImplementedError
             elif choice == 'e':
                 self._select_edit_mode()
@@ -77,17 +71,32 @@ class Disambiguator(BacklinkBot):
         self._option('a', 'Append')
         self._option('d', 'Delete')
         self._option('s', 'Substitute')
+        self._option('r', 'Reset')
         self._option('q', 'Back')
 
         while True:
             choice = input('e > ').lower()
             if choice == 'q':
                 return
-            elif choice in 'iads':
-                self._edit_links(choice)
-                return self._select_edit_mode()
-            else:
+            elif choice not in 'iadsr':
                 self._invalid(choice)
+                continue
+
+            if choice == 'r':
+                print('Resetting to default...', end=' ')
+                self._reset_links()
+                print('Done.')
+            else:
+                self._edit_links(choice)
+            return self._select_edit_mode()
+
+    def _reset_links(self):
+        'List links in a disambiguation page.'
+        disambig = self.site.pages[self.title]
+        contents = disambig.text()
+        self.links = re.findall(self.first_link_in_line, contents)
+        self.links.insert(0, self.title + '?')
+        return disambig
 
     def _edit_links(self, mode):
         'Edit links in the list.'
