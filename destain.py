@@ -21,8 +21,9 @@ class DestainBot(RegexBot):
 def nanchang():
     template = '南昌地铁线路名'
     single_line = r'(\{\{%s\|\d+)\|block(\}\})' % template
-    pattern = r'(?<=是\[\[南昌地铁\]\]){0}(?:(、){0})?(?=的)'.format(single_line)
-    repl = r'\1\2\3\4\5'
+    pattern = r'(?<=是\[\[南昌地铁\]\]){0}(?:(、){0})?(?=的)'
+    pattern = (pattern + r'|{0}(?=站厅在|岛式|侧式)').format(single_line)
+    repl = r'\1\2\3\4\5\6\7'
     return template, pattern, repl
 
 
