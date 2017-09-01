@@ -27,5 +27,12 @@ def nanchang():
     return template, pattern, repl
 
 
+def tianjin():
+    template = '天津地铁线路名'
+    pattern = r'\{\{%s\|M?(Z?\d+)\|\w+\}\}' % template
+    repl = r'{{天津轨道交通线路名|\1|c}}'
+    return template, pattern, repl
+
+
 if __name__ == '__main__':
     main(DestainBot)
