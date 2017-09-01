@@ -30,14 +30,13 @@ class RegexBot(Bot):
         if not page.namespace:  # check articles only
             contents = page.text()
             if re.search(self.pattern, contents):
-                self._replace(page, contents)
+                return self._replace(page, contents)
 
-        self.ignored += 1
         return next(self)
 
     def _replace(self, page, contents):
         'Do regular expression substitute and preview the changes.'
-        print()  # line break
+        self._info(page)
         self._preview(contents, '-', colorama.Fore.RED)
         result = re.sub(self.pattern, self.repl, contents)
         self._preview(result, '+', colorama.Fore.GREEN)

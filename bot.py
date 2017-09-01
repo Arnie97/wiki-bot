@@ -40,11 +40,8 @@ class Bot:
     @staticmethod
     def _info(page, *args, sep='', **kwargs):
         'Display the title and size of a page.'
-        print(
-            '\n',
-            colorama.Fore.CYAN, page.name,
-            colorama.Fore.GREEN, ' (', page.length, ')',
-            colorama.Fore.RESET, *args, sep=sep, **kwargs)
+        message = '\n{0.CYAN}{1.name}{0.GREEN} ({1.length}){0.RESET}'
+        print(message.format(colorama.Fore, page), *args, sep=sep, **kwargs)
 
     def _convert(self, **kwargs):
         'Convert between language variants, such as zh-CN and zh-TW.'
@@ -137,12 +134,8 @@ class Bot:
         items = ['total', 'edited', 'ignored', 'errors']
         self.total = sum(getattr(self, i) for i in items[1:])
         pattern = ', '.join('{{0.{0}}} {0}'.format(i) for i in items)
-        print(
-            '\n',
-            colorama.Fore.RED,
-            pattern.format(self),
-            colorama.Fore.RESET,
-            sep='')
+        message = '\n{0.RED}{1}{0.RESET}'
+        print(message.format(colorama.Fore, pattern.format(self)), sep='')
 
 
 def main(bot, argc=2, argv=sys.argv, host='zh.wikipedia.org', *args, **kwargs):
