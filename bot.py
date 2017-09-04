@@ -93,7 +93,7 @@ class Bot:
         while True:
             try:
                 choice = input(prompt).lower()
-            except (EOFError, KeyboardInterrupt):
+            except EOFError:
                 choice = 'q'
 
             if choice in {'yes', 'y', ''}:
@@ -159,12 +159,15 @@ class Bot:
 
 def main(bot, argc=2, argv=sys.argv, host='zh.wikipedia.org', *args, **kwargs):
     'Parse command line options.'
-    if argc <= len(argv) <= argc + 1:
+    try:
+        assert argc <= len(argv) <= argc + 1
         b = bot(host, *args, **kwargs)
         b(*argv[1:])
-    else:  # print the docstring as help message
+    except AssertionError:  # print the docstring as help message
         import __main__
         print(__main__.__doc__.format(argv[0]))
+    except KeyboardInterrupt:
+        b._show_stat()
 
 
 if __name__ == '__main__':
