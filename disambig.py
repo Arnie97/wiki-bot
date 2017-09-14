@@ -28,7 +28,7 @@ class Disambiguator(BacklinkBot):
             self.disambig_page = self.site.pages[variants[-1]]
         self._reset_links()
 
-        for page in self.disambig_page.backlinks():
+        for page in self.disambig_page.backlinks(filterredir='nonredirects'):
             self._select(page)
 
         self._show_stat()
