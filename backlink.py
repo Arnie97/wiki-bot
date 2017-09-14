@@ -33,11 +33,11 @@ class BacklinkBot(Bot):
     def _replace(self, page, src, dest, raw=False):
         'Do regular expression substitute.'
         rsrc = src if raw else re.escape(src)
-        rdest = re.escape(dest)
+        rdest = re.escape(dest) if dest else '(?!)'  # disable the second rule
         contents = page.text()
         for pattern, replace in self.rules:
             pattern = r'\[\[%s\]\]' % pattern.format(**locals())
-            replace = r'[[%s]]'     % replace.format(**locals())
+            replace = r'[[%s]]' % replace.format(**locals()) if dest else r'\1'
             contents = re.sub(pattern, replace, contents)
         self._save(page, contents, verbose=True)
 

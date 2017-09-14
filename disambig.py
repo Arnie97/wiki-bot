@@ -38,7 +38,7 @@ class Disambiguator(BacklinkBot):
         self._info(page, end='\n\n')
         for i, link in enumerate(self.links):
             self._option(i, link)
-        self._option('-', 'Remove this link')
+        self._option('-', 'Remove links')
         self._option('e', 'Edit link options')
         self._option('q', 'Quit')
 
@@ -63,7 +63,7 @@ class Disambiguator(BacklinkBot):
                 self._show_stat()
                 sys.exit()
             elif choice == '-':
-                raise NotImplementedError
+                return self._replace(page, self.regex, None, raw=True)
             elif choice == 'e':
                 self._select_edit_mode()
                 return self._select(page)
