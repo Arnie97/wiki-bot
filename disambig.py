@@ -20,10 +20,15 @@ class Disambiguator(BacklinkBot):
     def __call__(self, title, edit_summary, minor=False):
         'Iterate through backlinks.'
         super(BacklinkBot, self).__call__(edit_summary, minor)
-        self.title = title
-        disambig = self._reset_links()
+        self.disambig_page = self.site.pages[title]
+        variants = self._variants(self.disambig_page)
+        self.regex = '|'.join(map(re.escape, variants))
 
-        for page in disambig.backlinks():
+        if self.disambig_page.page_title != variants[-1]:
+            self.disambig_page = self.site.pages[variants[-1]]
+        self._reset_links()
+
+        for page in self.disambig_page.backlinks():
             self._select(page)
 
         self._show_stat()
@@ -51,7 +56,7 @@ class Disambiguator(BacklinkBot):
                 self.ignored += 1
                 return
             else:
-                return self._evaluate(page, self.title, self.links[n])
+                return self._replace(page, self.regex, self.links[n], raw=True)
 
             if choice == 'q':
                 self.ignored += 1
@@ -92,11 +97,9 @@ class Disambiguator(BacklinkBot):
 
     def _reset_links(self):
         'List links in a disambiguation page.'
-        disambig = self.site.pages[self.title]
-        contents = disambig.text()
+        contents = self.disambig_page.text()
         self.links = re.findall(self.first_link_in_line, contents)
-        self.links.insert(0, self.title + '?')
-        return disambig
+        self.links.insert(0, self.disambig_page.page_title + '?')
 
     def _edit_links(self, mode):
         'Edit links in the list.'

@@ -18,26 +18,28 @@ from bot import Bot, main
 
 class BacklinkBot(Bot):
 
+    rules = [
+        (r'({rsrc})', r'{dest}|\1'),
+        (r'(?:{rsrc})\|({rdest})', r'\1'),
+        (r'(?:{rsrc})\|([^\]|]+)', r'{dest}|\1'),
+    ]
+
     def __call__(self, title, src, dest, edit_summary, minor=False):
         'Iterate through backlinks.'
         super().__call__(edit_summary, minor)
-        self._evaluate(self.site.pages[title], src, dest)
+        rsrc = '|'.join(map(re.escape, self._dialects(src)))
+        self._replace(self.site.pages[title], rsrc, dest, raw=True)
 
-    def _evaluate(self, page, src, dest):
-        'Generate regular expression rules.'
-        rsrc, rdest = re.escape(src), re.escape(dest)
-        self._contents = page.text()
-        self._locals = locals()
-        self._replace(r'({rsrc})', r'{dest}|\1')
-        self._replace(r'{rsrc}\|({rdest})', r'\1')
-        self._replace(r'{rsrc}\|([^\]|]+)', r'{dest}|\1')
-        self._save(page, self._contents, verbose=True)
-
-    def _replace(self, pattern, replace):
+    def _replace(self, page, src, dest, raw=False):
         'Do regular expression substitute.'
-        pattern = r'\[\[%s\]\]' % pattern.format(**self._locals)
-        replace = r'[[%s]]'     % replace.format(**self._locals)
-        self._contents = re.sub(pattern, replace, self._contents)
+        rsrc = src if raw else re.escape(src)
+        rdest = re.escape(dest)
+        contents = page.text()
+        for pattern, replace in self.rules:
+            pattern = r'\[\[%s\]\]' % pattern.format(**locals())
+            replace = r'[[%s]]'     % replace.format(**locals())
+            contents = re.sub(pattern, replace, contents)
+        self._save(page, contents, verbose=True)
 
 
 if __name__ == '__main__':
