@@ -8,6 +8,8 @@ Example: {0} "Nothing of value" m
 
 import sys
 import time
+import collections
+import configparser
 import functools
 import mwclient
 import colorama
@@ -15,12 +17,12 @@ import colorama
 
 class Bot:
 
-    def __init__(self, host, *args, **kwargs):
+    def __init__(self, host, username=None, password=None, *args, **kwargs):
         'Sign in with your MediaWiki account.'
         colorama.init()
-        print('Logging into %s...' % host, end=' ')
+        print('Connecting to %s...' % host, end=' ')
         self.site = mwclient.Site(host, *args, **kwargs)
-        self.site.login()
+        self.site.login(username, password)
         print('Ready.')
 
     def __call__(self, edit_summary, minor=False):
@@ -157,11 +159,34 @@ class Bot:
         print(message.format(colorama.Fore, pattern.format(self)), sep='')
 
 
-def main(bot, argc=2, argv=sys.argv, host='zh.wikipedia.org', *args, **kwargs):
+def read_config(filenames, section=configparser.DEFAULTSECT):
+    'Read the configuration file.'
+    config = configparser.ConfigParser(default_section=section)
+    config.read(filenames)
+
+    result = collections.OrderedDict()
+    items = config[section]
+    for key in items:
+        # skip empty items
+        if not items[key]:
+            continue
+        # try to convert other items
+        for data_type in 'boolean', 'int', 'float', '':
+            converter = getattr(items, 'get' + data_type)
+            try:
+                result[key] = converter(key)
+            except ValueError:
+                pass
+            else:
+                break
+    return result
+
+
+def main(bot, argc=2, argv=sys.argv):
     'Parse command line options.'
     try:
         assert argc <= len(argv) <= argc + 1
-        b = bot(host, *args, **kwargs)
+        b = bot(**read_config('bot.ini', 'general'))
         b(*argv[1:])
     except AssertionError:  # print the docstring as help message
         import __main__
