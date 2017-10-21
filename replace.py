@@ -18,12 +18,13 @@ class ReplaceBot(Bot):
         super().__call__(edit_summary, minor)
         self.keywords = [pattern, repl]
 
-        for item in self.site.search('"%s"' % pattern):
-            self._evaluate(item)
+        for item in self.site.search('insource:"%s"' % pattern):
+            page = self._parse(item)
+            self._replace(page)
 
         self._show_stat()
 
-    def _evaluate(self, item):
+    def _parse(self, item):
         'Highlight keywords in the article.'
         page = self.site.pages[item['title']]
         self._info(page)
@@ -32,7 +33,7 @@ class ReplaceBot(Bot):
             .replace('<span class="searchmatch">', colorama.Fore.MAGENTA)
             .replace('</span>', colorama.Fore.RESET)
         ))
-        self._replace(page)
+        return page
 
     def _replace(self, page):
         'Performs the replacement and preview the changes.'
