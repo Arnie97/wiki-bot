@@ -30,7 +30,10 @@ class RegexReplaceBot(RegexBot, ReplaceBot):
     def _replace(self, page, contents):
         'Do regular expression substitute and preview the changes.'
         result = re.sub(self.pattern, self.repl, contents)
-        self._save(page, result)
+        if self.minor:  # automatic mode
+            self._save(page, result)
+        else:  # manual mode
+            self._confirm(page, result)
 
 
 if __name__ == '__main__':
