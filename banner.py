@@ -75,9 +75,8 @@ class BannerBot(Bot):
             self._confirm(page, result)
 
     def _save(self, *args, **kwargs):
-        self.lock.acquire()
-        super()._save(*args, **kwargs)
-        self.lock.release()
+        with self.lock:
+            super()._save(*args, **kwargs)
 
 
 if __name__ == '__main__':
