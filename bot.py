@@ -124,6 +124,9 @@ class Bot:
             for count in range(max_retries):
                 try:
                     func(self, *args, **kwargs)
+                except mwclient.ProtectedPageError:
+                    self.errors += 1
+                    return
                 except mwclient.MwClientError as err:
                     print('{0.__class__.__name__}: {0}'.format(err))
                     if count == max_retries - 1:
