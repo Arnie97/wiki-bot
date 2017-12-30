@@ -89,7 +89,7 @@ class Bot:
                 print(prefix, line)
         print(colorama.Fore.RESET, end='')
 
-    def _confirm(self, *args, **kwargs):
+    def _confirm(self, *args, verbose=True, **kwargs):
         'Confirm the changes.'
         prompt = '{0.YELLOW}Replace? [Y/n/q]: {0.RESET}'.format(colorama.Fore)
         while True:
@@ -99,7 +99,7 @@ class Bot:
                 choice = 'q'
 
             if choice in {'yes', 'y', ''}:
-                return self._save(*args, **kwargs, verbose=True)
+                return self._save(*args, **kwargs, verbose=verbose)
             elif choice in {'no', 'n'}:
                 self.ignored += 1
                 return

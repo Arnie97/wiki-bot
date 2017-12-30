@@ -8,6 +8,10 @@ Example: {0} "Add telegraph code" m
 
 import re
 import colorama
+import gevent.monkey
+import gevent.pool
+gevent.monkey.patch_all()
+
 from bot import Bot, main
 
 
@@ -26,6 +30,7 @@ class RailwayBot(Bot):
     def __init__(self, *args, **kwargs):
         'Load the telegraph code database.'
         super().__init__(*args, **kwargs)
+        self.pool = gevent.pool.Pool(100)
 
         # https://kyfw.12306.cn/otn/resources/js/framework/station_name.js
         with open('station_name.js', encoding='utf-8') as fp:
@@ -42,9 +47,9 @@ class RailwayBot(Bot):
         'Iterate through instances of the railway station template.'
         super().__call__(edit_summary, minor)
         self.unknown = 0
-
-        for page in self.site.pages[self.template].embeddedin():
-            self._evaluate(page)
+        pages = self.site.pages[self.template].embeddedin()
+        for page in self.pool.imap(self._evaluate, pages):
+            pass
 
         self._show_stat()
 
@@ -108,7 +113,7 @@ class RailwayBot(Bot):
         result = ''.join((s[:i], self.repl.format(*data), s[i:]))
         self._preview(result, '+', colorama.Fore.GREEN)
 
-        self._confirm(page, result)
+        self._confirm(page, result, verbose=False)
 
 
 if __name__ == '__main__':
