@@ -6,7 +6,6 @@ Usage: {0} <disambig-page> <edit-summary> [minor]
 Example: {0} CRH "Disambiguation" m
 '''
 
-import sys
 import re
 import colorama
 from bot import main
@@ -29,50 +28,43 @@ class Disambiguator(BacklinkBot):
         self._reset_links()
 
         for page in self.disambig_page.backlinks(filterredir='nonredirects'):
-            self._select(page)
+            self._menu_main(page)
 
         self._show_stat()
 
-    def _select(self, page):
-        'Select an option to proceed.'
-        self._info(page, end='\n\n')
-        self._print_options(
+    def _menu_main(self, page, silent=False):
+        'Show the main menu.'
+        silent or self._info(page, end='\n\n')
+        silent or self._print_options(
             *enumerate(self.links),
             ('-', 'Remove links'),
             ('e', 'Edit link options'),
             ('q', 'Quit'),
         )
-        while True:
-            try:
-                choice = input('--> ').lower()
-                n = int(choice)
-                assert n != 0
-                link = self.links[n]
-            except (EOFError, KeyboardInterrupt):
-                choice = 'q'
-            except (ValueError, IndexError):
-                pass
-            except AssertionError:
-                self.ignored += 1
-                return
-            else:
-                return self._replace(page, self.regex, self.links[n], raw=True)
+        choice = input('--> ').strip().lower()
+        if choice == '-':
+            return self._replace(page, self.regex, None, raw=True)
+        elif choice == 'e':
+            self._menu_edit_mode()
+            return self._menu_main(page)
+        elif choice == 'q':
+            raise KeyboardInterrupt
+        try:
+            n = int(choice)
+            assert n != 0
+            correct_link = self.links[n]
+        except (ValueError, IndexError):
+            self._invalid(choice)
+            return self._menu_main(page, silent=True)
+        except AssertionError:
+            self.ignored += 1
+            return
+        else:
+            return self._replace(page, self.regex, correct_link, raw=True)
 
-            if choice == 'q':
-                self.ignored += 1
-                self._show_stat()
-                sys.exit()
-            elif choice == '-':
-                return self._replace(page, self.regex, None, raw=True)
-            elif choice == 'e':
-                self._select_edit_mode()
-                return self._select(page)
-            else:
-                self._invalid(choice)
-
-    def _select_edit_mode(self):
-        'Show the editing submenu.'
-        self._print_options(
+    def _menu_edit_mode(self, silent=False):
+        'Show the link editing mode submenu.'
+        silent or self._print_options(
             ('i', 'Insert'),
             ('a', 'Append'),
             ('d', 'Delete'),
@@ -80,56 +72,58 @@ class Disambiguator(BacklinkBot):
             ('r', 'Reset'),
             ('q', 'Back'),
         )
-        while True:
-            choice = input('e > ').lower()
-            if choice == 'q':
-                return
-            elif choice not in 'iadsr':
-                self._invalid(choice)
-                continue
+        choice = input('e > ').strip().lower()
+        if choice == 'r':
+            print('Resetting to default...', end=' ')
+            self._reset_links()
+            print('Done.')
+            return
+        elif choice == 'q':
+            return
+        elif choice in 'iadsr':
+            return self._menu_edit_position(choice)
+        else:
+            self._invalid(choice)
+            return self._menu_edit_mode(silent=True)
 
-            if choice == 'r':
-                print('Resetting to default...', end=' ')
-                self._reset_links()
-                print('Done.')
-            else:
-                self._edit_links(choice)
-            return self._select_edit_mode()
-
-    def _reset_links(self):
-        'List links in a disambiguation page.'
-        contents = self.disambig_page.text()
-        self.links = re.findall(self.first_link_in_line, contents)
-        self.links.insert(0, self.disambig_page.page_title + '?')
-
-    def _edit_links(self, mode):
-        'Edit links in the list.'
-        self._print_options(
+    def _menu_edit_position(self, mode, silent=False):
+        'Show the link editing position submenu.'
+        silent or self._print_options(
             *enumerate(self.links),
             ('q', 'Back'),
         )
-        while True:
-            choice = input(mode + ' > ').lower()
-            if choice == 'q':
-                return
-            try:
-                n = int(choice)
-                assert mode != 'd' or n != 0
-                link = self.links[n]
-            except (ValueError, IndexError, AssertionError):
-                self._invalid(choice)
-                continue
+        choice = input(mode + ' > ').strip().lower()
+        if choice == 'q':
+            return
+        try:
+            n = int(choice)
+            assert mode != 'd' or n != 0
+            self.links[n]
+        except (ValueError, IndexError, AssertionError):
+            self._invalid(choice)
+            return self._menu_edit_position(mode, silent=True)
+        else:
+            self._edit_links(mode, n)
+            return self._menu_edit_position(mode)
 
-            if mode == 'd':
-                self.links.pop(n)
-            else:
-                s = input(mode + choice + ' > ')
-                if mode == 's':
-                    self.links[n] = s
-                else:
-                    n += 1 if mode == 'a' else 0
-                    self.links.insert(n, s)
-            return self._edit_links(mode)
+    def _edit_links(self, mode, n):
+        'Edit link items in the option list.'
+        if mode == 'd':
+            self.links.pop(n)
+            return
+
+        s = input(mode + str(n) + ' > ').strip()
+        if mode == 's':
+            self.links[n] = s
+        else:
+            n += 1 if mode == 'a' else 0
+            self.links.insert(n, s)
+
+    def _reset_links(self):
+        'List links in the disambiguation page.'
+        contents = self.disambig_page.text()
+        self.links = re.findall(self.first_link_in_line, contents)
+        self.links.insert(0, self.disambig_page.page_title + '?')
 
     def _print_options(self, *pairs):
         'Print multiple option items in the menu.'
