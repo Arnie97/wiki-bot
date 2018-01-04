@@ -36,12 +36,12 @@ class Disambiguator(BacklinkBot):
     def _select(self, page):
         'Select an option to proceed.'
         self._info(page, end='\n\n')
-        for i, link in enumerate(self.links):
-            self._option(i, link)
-        self._option('-', 'Remove links')
-        self._option('e', 'Edit link options')
-        self._option('q', 'Quit')
-
+        self._print_options(
+            *enumerate(self.links),
+            ('-', 'Remove links'),
+            ('e', 'Edit link options'),
+            ('q', 'Quit'),
+        )
         while True:
             try:
                 choice = input('--> ').lower()
@@ -72,13 +72,14 @@ class Disambiguator(BacklinkBot):
 
     def _select_edit_mode(self):
         'Show the editing submenu.'
-        self._option('i', 'Insert')
-        self._option('a', 'Append')
-        self._option('d', 'Delete')
-        self._option('s', 'Substitute')
-        self._option('r', 'Reset')
-        self._option('q', 'Back')
-
+        self._print_options(
+            ('i', 'Insert'),
+            ('a', 'Append'),
+            ('d', 'Delete'),
+            ('s', 'Substitute'),
+            ('r', 'Reset'),
+            ('q', 'Back'),
+        )
         while True:
             choice = input('e > ').lower()
             if choice == 'q':
@@ -103,10 +104,10 @@ class Disambiguator(BacklinkBot):
 
     def _edit_links(self, mode):
         'Edit links in the list.'
-        for i, link in enumerate(self.links):
-            self._option(i, link)
-        self._option('q', 'Back')
-
+        self._print_options(
+            *enumerate(self.links),
+            ('q', 'Back'),
+        )
         while True:
             choice = input(mode + ' > ').lower()
             if choice == 'q':
@@ -130,9 +131,14 @@ class Disambiguator(BacklinkBot):
                     self.links.insert(n, s)
             return self._edit_links(mode)
 
+    def _print_options(self, *pairs):
+        'Print multiple option items in the menu.'
+        for key, option in pairs:
+            self._print_option(key, option)
+
     @staticmethod
-    def _option(key, option):
-        'Print an available option.'
+    def _print_option(key, option):
+        'Print a single option item in the menu.'
         F = colorama.Fore
         print('{F.YELLOW}[{key}]{F.RESET} {option}'.format(**locals()))
 
