@@ -5,38 +5,47 @@
 
 import re
 import sys
+from bot import Bot
 
 
-def parse_rdt(line: str) -> str:
-    line = line[:-2]  # remove trailing braces '}}'
+class RDTConverter(Bot):
 
-    template, *params = line.split('|')
-    template_type = re.match(r'(?a)^\{\{BS(\d*)$', template)
-    if not template_type:
-        return line
-    n = int(template_type.group(1) or 1)
+    def __init__(self):
+        'Use English Wikipedia to substitute the templates.'
+        super().__init__('en.wikipedia.org')
 
-    icons, params = params[:n], params[n:]
+    def __call__(self, wikitext: str) -> str:
+        'Perform the conversions.'
+        wikitext = self._add_safesubst(wikitext)
+        result = self._parse_pst(wikitext).strip()
 
-    # remove empty cells
-    while params and params[-1] == '':
-        params.pop()
-    while icons[0] == icons[-1] == '':
-        icons.pop(0)
-        icons.pop()
+        if not result.startswith('{{'):
+            result = '{{Routemap|map=\n' + result
+        if not result.endswith('}}'):
+            result += '\n}}'
+        return result
 
-    params.insert(0, '\\'.join(icons))
+    @staticmethod
+    def _add_safesubst(wikitext: str) -> str:
+        'Add safesubst modifiers to the templates.'
+        pattern = r'''(?ax)
+            (\{\{)
+                (BS-?\w*|Railway\ line\ header)
+                /?\w*  # {{BS-table/WithCollapsibles}}
+            (\}\}|\|)
+        '''
+        repl = r'\1{0}:\2/{0}\3'.format('safesubst')
+        return re.sub(pattern, repl, wikitext)
 
-    # prevent '~~~~'
-    for i, param in enumerate(params):
-        if not param:
-            params[i] = ' '
-
-    return '~~'.join(params)
+    def _parse_pst(self, wikitext: str) -> str:
+        'Do a pre-save transform on the input.'
+        api = 'parse'
+        return self.site.post(
+            api, text=wikitext, contentmodel='wikitext',
+            onlypst=True
+        )[api]['text']['*']
 
 
 if __name__ == '__main__':
-    print('{{Routemap|map=')
-    for line in sys.stdin:
-        print(parse_rdt(line.strip()))
-    print('}}')
+    bot = RDTConverter()
+    print('\n', bot(sys.stdin.read()))
