@@ -75,7 +75,7 @@ class PageMover(RegexBot):
         self.keywords = dialects + [dest.name]
 
         for page in src.backlinks(redirect=False):
-            self._replace(page, page.text())
+            self._evaluate(page)
 
         remaining = ' '.join(p.name for p in src.backlinks())
         if remaining:

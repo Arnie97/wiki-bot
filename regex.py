@@ -27,7 +27,7 @@ class RegexBot(Bot):
 
     def _evaluate(self, page):
         'Analyze the page contents to decide the next step.'
-        if not page.namespace:  # check articles only
+        if page.namespace in [0, 10]:  # only articles and templates
             contents = page.text()
             if re.search(self.pattern, contents):
                 return self._replace(page, contents)
