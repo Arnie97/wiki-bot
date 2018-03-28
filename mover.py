@@ -68,15 +68,16 @@ class PageMover(RegexBot):
 
     def _move_links(self, src, dest):
         'Modify all the backlinks.'
-        self.keywords = [src.name, dest.name]
         dialects = self._dialects(src.name)
+        dialects = sum(([d.replace(' ', '_'), d] for d in dialects), [])
         self.pattern = r'\b(%s)' % '|'.join(map(re.escape, dialects))
         self.repl = dest.name
+        self.keywords = dialects + [dest.name]
 
         for page in src.backlinks(redirect=False):
             self._replace(page, page.text())
 
-        remaining = ' '.join(p.name for p in src.backlinks(redirect=False))
+        remaining = ' '.join(p.name for p in src.backlinks())
         if remaining:
             print('Backlinks left behind:', remaining)
         else:
