@@ -51,10 +51,11 @@ class Bot:
 
     def _variants(self, page, **kwargs):
         'List redirect equivalents and language variants of the page.'
-        print('Parsing variants of "%s"...' % page.name, end=' ')
+        print('Parsing variants...', end=' ')
         # track the redirect chain to its origin
         while page:
             origin = page
+            print(page.name, end=' > ')
             page = page.redirects_to()
 
         # get all incoming redirects
