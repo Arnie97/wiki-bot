@@ -196,7 +196,10 @@ def main(bot, argc=2, argv=sys.argv):
         import __main__
         print(__main__.__doc__.format(argv[0]))
     except KeyboardInterrupt:
-        b._show_stat()
+        if 'b' in vars():
+            b._show_stat()
+        else:
+            print('Cancelled.')
 
 
 if __name__ == '__main__':
