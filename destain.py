@@ -34,5 +34,13 @@ def tianjin():
     return template, pattern, repl
 
 
+def chengdu():
+    template = '成都地铁标志色'
+    pattern = r'\'*<span style="color:#\{\{%s\|\d+\}\}">'
+    pattern = pattern % template + r"'*(.+?)'*</span>'*"
+    repl = r'\1'
+    return template, pattern, repl
+
+
 if __name__ == '__main__':
     main(DestainBot)
