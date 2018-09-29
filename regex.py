@@ -6,7 +6,6 @@ Usage: {0} <templates> <pattern> <repl> <edit-summary> [minor]
 '''
 
 import re
-import colorama
 from bot import Bot, main
 
 
@@ -17,7 +16,6 @@ class RegexBot(Bot):
         super().__call__(edit_summary, minor)
         self.pattern = pattern
         self.repl = repl
-        self.keywords = ['{{' + template]  # for diff preview
 
         ns = 'Template:'
         for page in self.site.pages[ns + template].embeddedin():
@@ -37,9 +35,8 @@ class RegexBot(Bot):
     def _replace(self, page, contents):
         'Do regular expression substitute and preview the changes.'
         self._info(page)
-        self._preview(contents, '-', colorama.Fore.RED)
         result = re.sub(self.pattern, self.repl, contents)
-        self._preview(result, '+', colorama.Fore.GREEN)
+        self._diff(contents, result)
         self._confirm(page, result)
 
 

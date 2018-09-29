@@ -40,8 +40,7 @@ class ReplaceBot(Bot):
         original_text = page.text()
         replaced_text = original_text.replace(*self.keywords)
         if not self.minor:
-            self._preview(original_text, '-', colorama.Fore.RED)
-            self._preview(replaced_text, '+', colorama.Fore.GREEN)
+            self._diff(original_text, replaced_text)
         self._confirm(page, replaced_text)
 
 

@@ -91,15 +91,12 @@ class RailwayBot(Bot):
         self._info(page, ' -> ', prompt, end='')
 
         if action:
-            self._replace(page, self.stations[normalized], included)
+            self._replace(page, contents, self.stations[normalized], included)
 
-    def _replace(self, page, data, existing=False):
+    def _replace(self, page, contents, data, existing=False):
         'Do regular expression substitute and preview the changes.'
-        print()  # line break
-        s = page.text()
-        self._preview(s, '-', colorama.Fore.RED)
-
         # remove existing parameters
+        s = contents
         if existing:
             fields = '|'.join(self.keywords)
             s = re.sub(self.field_pattern % fields, '', s)
@@ -111,8 +108,8 @@ class RailwayBot(Bot):
         # insert telegraph code after the match
         i = match.end()
         result = ''.join((s[:i], self.repl.format(*data), s[i:]))
-        self._preview(result, '+', colorama.Fore.GREEN)
 
+        self._diff(contents, result)
         self._confirm(page, result, verbose=False)
 
 

@@ -10,6 +10,7 @@ import sys
 import time
 import collections
 import configparser
+import difflib
 import functools
 import mwclient
 import colorama
@@ -82,13 +83,22 @@ class Bot:
             s.add(self._convert(title=title, uselang=dialect))
         return s
 
-    def _preview(self, contents, prefix='', color=colorama.Fore.RESET):
+    @staticmethod
+    def _diff(x, y, **kwargs):
         'Generate a summary of changes in "diff" style.'
-        print(color, end='')
-        for line in contents.split('\n'):
-            if any(keyword in line for keyword in self.keywords):
-                print(prefix, line)
-        print(colorama.Fore.RESET, end='')
+        colors = {
+            '+': colorama.Fore.GREEN,
+            '-': colorama.Fore.RED,
+            '@': colorama.Fore.YELLOW,
+        }
+        x, y = x.splitlines(), y.splitlines()
+        for line in difflib.unified_diff(x, y, lineterm='', **kwargs):
+            for prefix, color in colors.items():
+                if line.startswith(prefix):
+                    print(color, line, colorama.Fore.RESET, sep='')
+                    break
+            else:
+                print(line)
 
     def _confirm(self, *args, verbose=True, **kwargs):
         'Confirm the changes.'
@@ -111,7 +121,8 @@ class Bot:
             else:
                 self._invalid(choice)
 
-    def _invalid(self, command):
+    @staticmethod
+    def _invalid(command):
         'Print warning message for invalid operations.'
         message = '{0.RED}Invalid operation: {0.RESET}{1}'
         print(message.format(colorama.Fore, command))
